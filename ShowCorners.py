@@ -86,11 +86,10 @@ def main():
 
     i = 0
     for row in rowOrderedPoints:
-        print(row)
         for point in row[1]:
             x, y = point
             cv2.circle(image, (x, y), 4, color=(0,0,255), thickness=5)
-            cv2.putText(image, str(i), (x + 10, y + 10), fontFace=cv2.FONT_HERSHEY_PLAIN, fontScale=1, color=(255,255,255), thickness=1)
+            cv2.putText(image, str(i), (x + 10, y + 10), fontFace=cv2.FONT_HERSHEY_PLAIN, fontScale=2, color=(0,0,255), thickness=1)
             i += 1
         i = 0
 
