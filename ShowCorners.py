@@ -5,91 +5,97 @@ import math
 import numpy as np
 import time
 
-def distance(point1: tuple[int, int], point2: tuple[int, int]):
-    x1, y1 = point1
-    x2, y2 = point2
-    return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+class CheckerboardDetector():
 
-def orderPoints(points: np.ndarray, threshold: int, byColumn: bool):
-    lines = []
-    currentLine = []
-    for point in points:
-        point = tuple(point[0])
-        x, y = point
-        if byColumn:
-            interestCord = x
-        else:
-            interestCord = y
-        # Go through rows created, see if new point can go inside
-        if lines:
-            for position in lines:
-                if abs(interestCord - position[0]) < threshold:
-                    lines.remove(position)
-                    currentLine = position
-                    break
-        if not currentLine:
-            currentLine = (interestCord, [])
-        currentLine[1].append(point)
-        lines.append(currentLine)
+    def distance(self, point1: tuple[int, int], point2: tuple[int, int]):
+        x1, y1 = point1
+        x2, y2 = point2
+        return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+
+    def orderPoints(self, points: np.ndarray, threshold: int, byColumn: bool):
+        lines = []
         currentLine = []
-    # # Sort points left/right or up/down
-    lines = sorted(lines, key=lambda x: x[0])
-    finalLines = []
-    for line in lines:
-        asList = list(line[1])
-        asList = sorted(asList, key=lambda x: x[1 * int(byColumn)])
-        finalLines.append(tuple([line[0], asList]))
-    finalLines = sorted(finalLines, key=lambda x: x[0])
-    return finalLines
+        for point in points:
+            point = tuple(point[0])
+            x, y = point
+            if byColumn:
+                interestCord = x
+            else:
+                interestCord = y
+            # Go through rows created, see if new point can go inside
+            if lines:
+                for position in lines:
+                    if abs(interestCord - position[0]) < threshold:
+                        lines.remove(position)
+                        currentLine = position
+                        break
+            if not currentLine:
+                currentLine = (interestCord, [])
+            currentLine[1].append(point)
+            lines.append(currentLine)
+            currentLine = []
+        # # Sort points left/right or up/down
+        lines = sorted(lines, key=lambda x: x[0])
+        finalLines = []
+        for line in lines:
+            asList = list(line[1])
+            asList = sorted(asList, key=lambda x: x[1 * int(byColumn)])
+            finalLines.append(tuple([line[0], asList]))
+        finalLines = sorted(finalLines, key=lambda x: x[0])
+        return finalLines
 
 
-def findCheckboard(rowList: List[tuple[int, List]], colList: List[tuple[int, List]], shape: tuple[int, int], threshold: int):
-    w, h = shape
-    eligableRows = []
-    for row in rowList:
-        if len(row[1]) >= w:
-            eligableRows.append(row)
-    if len(eligableRows) < h:
-        return None
-    eligableCols = []
-    for col in colList:
-        if len(col[1]) >= h:
-            eligableCols.append(col)
-    if len(eligableCols) < w:
-        return None
-    possibleRowCorners = []
-    possibleColCorners = []
-    for row in eligableRows:
-        possibleRowCorners.extend(row[1][0:3])
-    for col in eligableCols:
-        possibleColCorners.extend(col[1][0:3])
-    
-    topLeft = list(set(possibleRowCorners) & set(possibleColCorners))
-    if topLeft:
-        leftEdge = []
+    def findCheckboard(self, rowList: List[tuple[int, List]], colList: List[tuple[int, List]], shape: tuple[int, int], threshold: int):
+        w, h = shape
+        eligableRows = []
+        for row in rowList:
+            if len(row[1]) >= w:
+                eligableRows.append(row)
+        if len(eligableRows) < h:
+            return None
+        eligableCols = []
+        for col in colList:
+            if len(col[1]) >= h:
+                eligableCols.append(col)
+        if len(eligableCols) < w:
+            return None
+        possibleRowCorners = []
+        possibleColCorners = []
+        for row in eligableRows:
+            possibleRowCorners.extend(row[1][0:3])
         for col in eligableCols:
-            if topLeft[0] in col[1]:
-                leftEdge = col[1]
-                break
-        checkboard = []
-        currentRow = 0
-        for farLeft in leftEdge:
-            while currentRow < len(rowList):
-                currentRow += 1
-                if farLeft in rowList[currentRow - 1][1]:
-                    cornerPos = rowList[currentRow - 1][1].index(farLeft)
-                    checkboard.append(rowList[currentRow - 1][1][cornerPos:cornerPos + w])
+            possibleColCorners.extend(col[1][0:3])
+        
+        topLeft = list(set(possibleRowCorners) & set(possibleColCorners))
+        if topLeft:
+            leftEdge = []
+            for col in eligableCols:
+                if topLeft[0] in col[1]:
+                    pointPos = col[1].index(topLeft[0])
+                    leftEdge = col[1][pointPos:pointPos + h]
                     break
-                else:
-                    return None
-            if len(checkboard) == h:
-                break
-        return checkboard
-    return None
+            checkboard = []
+            currentRow = 0
+            for farLeft in leftEdge:
+                while currentRow < len(rowList):
+                    currentRow += 1
+                    if farLeft in rowList[currentRow - 1][1]:
+                        cornerPos = rowList[currentRow - 1][1].index(farLeft)
+                        if cornerPos + w > len(rowList[currentRow - 1][1]):
+                            return None
+                        checkboard.append(rowList[currentRow - 1][1][cornerPos:cornerPos + w])
+                        break
+                    else:
+                        return None
+                if len(checkboard) == h:
+                    break
+            return checkboard
+        return None
 
 def main():
     # Live Video
     video = cv2.VideoCapture(0)
+    checkerboardDetector = CheckerboardDetector()
 # 
     keyPress = None
     startTime = time.time()
@@ -97,9 +103,10 @@ def main():
 # 
     while keyPress != ord('q'):
         ret, image = video.read()
+        previewPic = image
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         if ret:
-            corners = cv2.goodFeaturesToTrack(gray,40,0.01,20)
+            corners = cv2.goodFeaturesToTrack(gray,50,0.01,20)
             cornerPoints = np.int0(corners)
 
             for cornerPoint in cornerPoints:
@@ -107,24 +114,24 @@ def main():
                 cv2.circle(image, (y, x), 4, color=(0,0,255), thickness=2)
 
             threshold = 35
-            rowOrderedPoints = orderPoints(cornerPoints, threshold, False)
-            colOrderedPoints = orderPoints(cornerPoints, threshold, True)
+            rowOrderedPoints = checkerboardDetector.orderPoints(cornerPoints, threshold, False)
+            colOrderedPoints = checkerboardDetector.orderPoints(cornerPoints, threshold, True)
 
             i = 0
             for row in rowOrderedPoints:
                 for point in row[1]:
                     x, y = point
-                    cv2.circle(image, (x, y), 4, color=(0,0,255), thickness=5)
-                    cv2.putText(image, str(i), (x + 10, y + 10), fontFace=cv2.FONT_HERSHEY_PLAIN, fontScale=2, color=(0,0,255), thickness=1)
+                    cv2.circle(previewPic, (x, y), 4, color=(0,0,255), thickness=5)
+                    cv2.putText(previewPic, str(i), (x + 10, y + 10), fontFace=cv2.FONT_HERSHEY_PLAIN, fontScale=2, color=(0,0,255), thickness=1)
                     i += 1
                 i = 0
 
-            checkboardCorners = findCheckboard(rowOrderedPoints, colOrderedPoints, (6, 4), threshold)
+            checkboardCorners = checkerboardDetector.findCheckboard(rowOrderedPoints, colOrderedPoints, (6, 4), threshold)
             if checkboardCorners is not None:
                 for row in checkboardCorners:
                     for point in row:
                         x, y = point
-                        cv2.circle(image, (x,y), 4, color=(0,255,0), thickness=2)
+                        cv2.circle(previewPic, (x,y), 4, color=(0,255,0), thickness=2)
                 if time.time() - startTime > 1:
                     cv2.imwrite(f"./CornerPics/CornerPicture_{picNum}.jpg", image)
                     picNum += 1
@@ -132,7 +139,7 @@ def main():
 
             # prettyPrintOrdered(orderedPoints)
             # 
-            cv2.imshow("Webcam", image)
+            cv2.imshow("Webcam", previewPic)
             keyPress = cv2.waitKey(5)
         else:
             print("Error opening video feed")
