@@ -3,6 +3,7 @@ import cv2
 import matplotlib.pyplot as plt
 import math
 import numpy as np
+import os
 import time
 
 class CheckerboardDetector():
@@ -98,82 +99,83 @@ def main():
     checkerboardDetector = CheckerboardDetector()
 # 
     keyPress = None
-    startTime = time.time()
-    picNum = 0
-# 
-    while keyPress != ord('q'):
-        ret, image = video.read()
-        previewPic = image
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        if ret:
-            corners = cv2.goodFeaturesToTrack(gray,50,0.01,20)
-            cornerPoints = np.int0(corners)
+#     startTime = time.time()
+#     picNum = 0
+# # 
+#     while keyPress != ord('q'):
+#         ret, image = video.read()
+#         previewPic = np.copy(image)
+#         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+#         if ret:
+#             corners = cv2.goodFeaturesToTrack(gray,50,0.01,20)
+#             cornerPoints = np.int0(corners)
 
-            for cornerPoint in cornerPoints:
-                y, x = cornerPoint.ravel()
-                cv2.circle(image, (y, x), 4, color=(0,0,255), thickness=2)
+#             for cornerPoint in cornerPoints:
+#                 y, x = cornerPoint.ravel()
+#                 cv2.circle(previewPic, (y, x), 4, color=(0,0,255), thickness=2)
 
-            threshold = 35
-            rowOrderedPoints = checkerboardDetector.orderPoints(cornerPoints, threshold, False)
-            colOrderedPoints = checkerboardDetector.orderPoints(cornerPoints, threshold, True)
+#             threshold = 35
+#             rowOrderedPoints = checkerboardDetector.orderPoints(cornerPoints, threshold, False)
+#             colOrderedPoints = checkerboardDetector.orderPoints(cornerPoints, threshold, True)
 
-            i = 0
-            for row in rowOrderedPoints:
-                for point in row[1]:
-                    x, y = point
-                    cv2.circle(previewPic, (x, y), 4, color=(0,0,255), thickness=5)
-                    cv2.putText(previewPic, str(i), (x + 10, y + 10), fontFace=cv2.FONT_HERSHEY_PLAIN, fontScale=2, color=(0,0,255), thickness=1)
-                    i += 1
-                i = 0
+#             i = 0
+#             for row in rowOrderedPoints:
+#                 for point in row[1]:
+#                     x, y = point
+#                     cv2.circle(previewPic, (x, y), 4, color=(0,0,255), thickness=5)
+#                     cv2.putText(previewPic, str(i), (x + 10, y + 10), fontFace=cv2.FONT_HERSHEY_PLAIN, fontScale=2, color=(0,0,255), thickness=1)
+#                     i += 1
+#                 i = 0
 
-            checkboardCorners = checkerboardDetector.findCheckboard(rowOrderedPoints, colOrderedPoints, (6, 4), threshold)
-            if checkboardCorners is not None:
-                for row in checkboardCorners:
-                    for point in row:
-                        x, y = point
-                        cv2.circle(previewPic, (x,y), 4, color=(0,255,0), thickness=2)
-                if time.time() - startTime > 1:
-                    cv2.imwrite(f"./CornerPics/CornerPicture_{picNum}.jpg", image)
-                    picNum += 1
-                    startTime = time.time()
+#             checkboardCorners = checkerboardDetector.findCheckboard(rowOrderedPoints, colOrderedPoints, (6, 4), threshold)
+#             if checkboardCorners is not None:
+#                 for row in checkboardCorners:
+#                     for point in row:
+#                         x, y = point
+#                         cv2.circle(previewPic, (x,y), 4, color=(0,255,0), thickness=2)
+#                 if time.time() - startTime > 1:
+#                     cv2.imwrite(f"./CornerPics/CornerPicture_{picNum}.jpg", image)
+#                     picNum += 1
+#                     startTime = time.time()
 
-            # prettyPrintOrdered(orderedPoints)
-            # 
-            cv2.imshow("Webcam", previewPic)
-            keyPress = cv2.waitKey(5)
-        else:
-            print("Error opening video feed")
+#             # prettyPrintOrdered(orderedPoints)
+#             # 
+#             cv2.imshow("Webcam", previewPic)
+#             keyPress = cv2.waitKey(5)
+#         else:
+#             print("Error opening video feed")
 
     # Still image for testing
     # image = cv2.imread('Checkerboard.jpg')
-    # gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    image = cv2.imread(f"{os.getcwd()}/CornerPics/CornerPicture_0.jpg")
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-    # corners = cv2.goodFeaturesToTrack(gray,40,0.01,10)
-    # cornerPoints = np.int0(corners)
-    # rowOrderedPoints = orderPoints(cornerPoints, 30, False)
-    # colOrderedPoints = orderPoints(cornerPoints, 30, True)
+    corners = cv2.goodFeaturesToTrack(gray,50,0.01,20)
+    cornerPoints = np.int0(corners)
+    rowOrderedPoints = checkerboardDetector.orderPoints(cornerPoints, 30, False)
+    colOrderedPoints = checkerboardDetector.orderPoints(cornerPoints, 30, True)
 
-    # i = 0
-    # for row in rowOrderedPoints:
-    #     for point in row[1]:
-    #         x, y = point
-    #         cv2.circle(image, (x, y), 4, color=(0,0,255), thickness=5)
-    #         cv2.putText(image, str(i), (x + 10, y + 10), fontFace=cv2.FONT_HERSHEY_PLAIN, fontScale=2, color=(0,0,255), thickness=1)
-    #         i += 1
-    #     i = 0
+    i = 0
+    for row in rowOrderedPoints:
+        for point in row[1]:
+            x, y = point
+            cv2.circle(image, (x, y), 4, color=(0,0,255), thickness=5)
+            cv2.putText(image, str(i), (x + 10, y + 10), fontFace=cv2.FONT_HERSHEY_PLAIN, fontScale=2, color=(0,0,255), thickness=1)
+            i += 1
+        i = 0
 
-    # checkboardCorners = findCheckboard(rowOrderedPoints, colOrderedPoints, (6, 4), 30)
-    # print(checkboardCorners)
-    # if checkboardCorners is not None:
-    #     for row in checkboardCorners:
-    #         for point in row:
-    #             x, y = point
-    #             cv2.circle(image, (x,y), 4, color=(0,255,0), thickness=2)
+    checkboardCorners = checkerboardDetector.findCheckboard(rowOrderedPoints, colOrderedPoints, (6, 4), 30)
+    print(checkboardCorners)
+    if checkboardCorners is not None:
+        for row in checkboardCorners:
+            for point in row:
+                x, y = point
+                cv2.circle(image, (x,y), 4, color=(0,255,0), thickness=2)
 
-    # cv2.imshow("Checkboard", image)
+    cv2.imshow("Checkboard", image)
 
-    # while keyPress != ord('q'):
-    #     keyPress = cv2.waitKey(0)
+    while keyPress != ord('q'):
+        keyPress = cv2.waitKey(0)
 
 if __name__ == '__main__':
     main()
