@@ -93,6 +93,18 @@ class CheckerboardDetector():
             return checkboard
         return None
 
+    def refineCheckerboard(self, checkerboard: List[tuple[int, List]]):
+        checkerboardSubPix = []
+        for row in checkerboard:
+            avgChangeInX = np.mean(row[:][0])
+            avgChangeInY = np.mean(row[:][1])
+            x1, y1 = row[0]
+            newRow = []
+            for i in range(len(row)):
+                newRow.append((x1 + avgChangeInX * i, y1 + avgChangeInY * i))
+            checkerboardSubPix.append(newRow)
+        return checkerboardSubPix
+
 def main():
     # Live Video
     video = cv2.VideoCapture(0)
@@ -165,7 +177,9 @@ def main():
         i = 0
 
     checkboardCorners = checkerboardDetector.findCheckboard(rowOrderedPoints, colOrderedPoints, (6, 4), 30)
+    refinedCheckerboardCorners = checkerboardDetector.refineCheckerboard(checkboardCorners)
     print(checkboardCorners)
+    print(refinedCheckerboardCorners)
     if checkboardCorners is not None:
         for row in checkboardCorners:
             for point in row:
