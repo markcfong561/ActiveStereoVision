@@ -8,10 +8,10 @@ import time
 
 class CheckerboardDetector():
 
-    def distance(self, point1: tuple[int, int], point2: tuple[int, int]):
-        x1, y1 = point1
-        x2, y2 = point2
-        return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+    # def distance(self, point1: tuple[int, int], point2: tuple[int, int]):
+    #     x1, y1 = point1
+    #     x2, y2 = point2
+    #     return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
 
     def orderPoints(self, points: np.ndarray, threshold: int, byColumn: bool):
         lines = []
@@ -46,7 +46,7 @@ class CheckerboardDetector():
         return finalLines
 
 
-    def findCheckboard(self, rowList: List[tuple[int, List]], colList: List[tuple[int, List]], shape: tuple[int, int], threshold: int):
+    def findCheckboard(self, rowList, colList, shape):
         w, h = shape
         eligableRows = []
         for row in rowList:
@@ -93,21 +93,49 @@ class CheckerboardDetector():
             return checkboard
         return None
 
-    def refineCheckerboard(self, checkerboard: List[tuple[int, List]]):
-        checkerboardSubPix = []
-        for row in checkerboard:
-            avgChangeInX = np.mean(row[:][0])
-            avgChangeInY = np.mean(row[:][1])
-            x1, y1 = row[0]
-            newRow = []
-            for i in range(len(row)):
-                newRow.append((x1 + avgChangeInX * i, y1 + avgChangeInY * i))
-            checkerboardSubPix.append(newRow)
-        return checkerboardSubPix
+    # def refineCheckerboard(self, checkerboard: List[tuple[int, List]]):
+    #     checkerboardSubPix = []
+    #     for row in checkerboard:
+    #         avgChangeInX = np.mean(row[:][0])
+    #         avgChangeInY = np.mean(row[:][1])
+    #         x1, y1 = row[0]
+    #         newRow = []
+    #         for i in range(len(row)):
+    #             newRow.append((x1 + avgChangeInX * i, y1 + avgChangeInY * i))
+    #         checkerboardSubPix.append(newRow)
+    #     return checkerboardSubPix
+
+def gstreamer_pipeline(
+    sensor_id=0,
+    capture_width=1920,
+    capture_height=1080,
+    display_width=960,
+    display_height=540,
+    framerate=30,
+    flip_method=0,
+):
+    return (
+        "nvarguscamerasrc sensor-id=%d !"
+        "video/x-raw(memory:NVMM), width=(int)%d, height=(int)%d, framerate=(fraction)%d/1 ! "
+        "nvvidconv flip-method=%d ! "
+        "video/x-raw, width=(int)%d, height=(int)%d, format=(string)BGRx ! "
+        "videoconvert ! "
+        "video/x-raw, format=(string)BGR ! appsink"
+        % (
+            sensor_id,
+            capture_width,
+            capture_height,
+            framerate,
+            flip_method,
+            display_width,
+            display_height,
+        )
+    )
+
 
 def main():
     # Live Video
-    video = cv2.VideoCapture(0)
+    video = cv2.VideoCapture(gstreamer_pipeline())
     checkerboardDetector = CheckerboardDetector()
 # 
     keyPress = None
@@ -139,7 +167,7 @@ def main():
                     i += 1
                 i = 0
 
-            checkboardCorners = checkerboardDetector.findCheckboard(rowOrderedPoints, colOrderedPoints, (6, 4), threshold)
+            checkboardCorners = checkerboardDetector.findCheckboard(rowOrderedPoints, colOrderedPoints, (6, 4))
             if checkboardCorners is not None:
                 for row in checkboardCorners:
                     for point in row:
